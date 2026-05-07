@@ -1,60 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
     <head>
         <meta charset="UTF-8">
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="battle.css" type="text/css" />
-        <title>BattleShip Game</title>
+        <title>Battleship</title>
     </head>
     <body>
-        <h1>BattleShip</h1>
-        <h3>Selecciona la posición de tus naves</h3>
-        <div class="container">
-            <div class="row">
-                <div class="col">
-                    <div id="board">
-                    </div>
-                </div>
-                <div class="col">
-                    <div id="boardAttack">
-                    </div>
-                </div>
+        <main class="app-shell">
+            <div class="menu-backdrop" aria-hidden="true">
+                <div class="menu-backdrop__image"></div>
+                <div class="menu-backdrop__overlay"></div>
+                <div class="menu-backdrop__scanlines"></div>
+                <div class="menu-backdrop__radar menu-backdrop__radar--outer"></div>
+                <div class="menu-backdrop__radar menu-backdrop__radar--inner"></div>
             </div>
-            <h4>Tus naves:</h4>
-            <div id="ships" class="row">
-                <div class="col"> 
-                    <div>
-                        <span>Portaviones</span></br>
-                        <span>Tamaño: 5</span>
-                    </div>
-                    <div class="position"></div>
+
+            <nav class="sidenav" aria-label="Navegación principal">
+                <div class="sidenav__footer">
+                    <button id="sidenavSettingsButton" class="sidenav__settings-button" type="button" aria-label="Ajustes" title="Ajustes">
+                        ⚙
+                    </button>
                 </div>
-                <div class="col"> 
-                    <div>
-                        <span>Acorazado</span></br>
-                        <span>Tamaño: 4</span>
+            </nav>
+
+            <section id="menuScreen" class="screen">
+                <div class="menu-shell">
+                    <div class="menu-shell__title">
+                        <h1>BATTLESHIP</h1>
+                        <div class="menu-shell__subtitle">
+                            <span></span>
+                            <p>NAVAL COMMAND SYSTEM v4.2</p>
+                            <span></span>
+                        </div>
                     </div>
-                    <div class="position"></div>
+
+                    <div id="modeSelectionPanel" class="menu-shell__stack">
+                        <button class="menu-action menu-action--bot tactical-button active" type="button" data-mode="bot">
+                            <span class="menu-action__badge"><span class="menu-action__icon">▣</span></span>
+                            <span class="menu-action__text">VS BOT</span>
+                            <span class="menu-action__meta"></span>
+                        </button>
+
+                        <button class="menu-action menu-action--multi tactical-button" type="button" data-mode="multiplayer">
+                            <span class="menu-action__badge menu-action__badge--local">LOCAL</span>
+                            <span class="menu-action__text">MULTIJUGADOR</span>
+                            <span class="menu-action__meta"></span>
+                        </button>
+                    </div>
+
+                    <section id="menuDetailsPanel" class="menu-panel glass-panel hidden">
+                        <div class="menu-panel__section">
+                        <button id="backToModeButton" class="menu-panel__back" type="button" aria-label="Volver" title="Volver al menú">
+                            <span class="menu-panel__back-icon">←</span>
+                        </button>
+                            <span id="menuVariantTitle" class="menu-panel__label">VARIANTES</span>
+                        </div>
+
+                        <div class="menu-panel__section">
+                            <span class="menu-panel__label">VARIANTE</span>
+                            <div class="button-grid button-grid--tight">
+                                <button class="choice-button active" type="button" data-variant="classic">Clásico</button>
+                                <button class="choice-button" type="button" data-variant="powered">Potenciado</button>
+                            </div>
+                        </div>
+
+                        <div id="difficultyGroup" class="menu-panel__section">
+                            <span class="menu-panel__label">DIFICULTAD DE LA MÁQUINA</span>
+                            <div class="button-grid button-grid--tight">
+                                <button class="choice-button" type="button" data-difficulty="easy">Fácil</button>
+                                <button class="choice-button active" type="button" data-difficulty="normal">Normal</button>
+                                <button class="choice-button" type="button" data-difficulty="hard">Difícil</button>
+                            </div>
+                        </div>
+
+                        <div class="menu-panel__section menu-panel__section--actions">
+                            <button id="menuStartButton" class="primary-button tactical-button" type="button">INICIAR OPERACIÓN</button>
+                        </div>
+                    </section>
                 </div>
-                <div class="col"> 
-                    <div>
-                        <span>Submarino</span></br>
-                        <span>Tamaño: 3</span>
+            </section>
+
+            <section id="settingsPanel" class="overlay hidden" aria-hidden="true">
+                <div class="overlay-card">
+                    <h2>Configuraciones</h2>
+                    <p>Panel reservado para ajustes futuros del juego.</p>
+                    <div class="menu-actions">
+                        <button id="closeSettingsButton" class="primary-button" type="button">Cerrar</button>
                     </div>
-                    <div class="position"></div>
                 </div>
-                <div class="col"> 
+            </section>
+
+            <section id="gameScreen" class="screen hidden">
+                <header class="game-header">
                     <div>
-                        <span>Destructor</span></br>
-                        <span>Tamaño: 2</span>
+                        <p id="gameModeLabel" class="eyebrow"></p>
+                        <h2 id="turnLabel">Preparación</h2>
+                        <p id="statusText">Coloca tus naves para comenzar.</p>
                     </div>
-                    <div class="position"></div>
-                </div>           
-            </div>
-            <div class="row">
-                <button id="button" onclick="startGame()">Empezar juego</button>
-            </div>
-        </div>
+                    <button id="backToMenuButton" class="secondary-button" type="button">Volver al menú</button>
+                </header>
+
+                <div class="board-layout">
+                    <article class="board-card">
+                        <h3 id="playerBoardLabel">Tu tablero</h3>
+                        <div id="board"></div>
+                    </article>
+
+                    <article id="attackCard" class="board-card hidden">
+                        <h3 id="opponentBoardLabel">Tablero rival</h3>
+                        <div id="boardAttack"></div>
+                    </article>
+                </div>
+
+                <section id="setupPanel" class="setup-panel">
+                    <div class="ships-panel">
+                        <h3>Naves</h3>
+                        <div id="ships" class="ships"></div>
+                    </div>
+
+                    <div class="orientation-panel">
+                        <h3>Orientación</h3>
+                        <div id="orientationControls" class="button-grid">
+                            <button class="choice-button active" type="button" data-orientation="horizontal">Horizontal</button>
+                            <button class="choice-button" type="button" data-orientation="vertical">Vertical</button>
+                        </div>
+                    </div>
+
+                    <div class="setup-actions">
+                        <button id="setupActionButton" class="primary-button" type="button">Empezar juego</button>
+                    </div>
+                </section>
+            </section>
+        </main>
+
         <script type="text/javascript" src="battle.js"></script>
     </body>
 </html>
