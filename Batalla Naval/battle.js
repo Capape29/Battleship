@@ -95,7 +95,7 @@ function getModeLabel() {
 }
 
 function getVariantLabel() {
-    return state.variant === "powered" ? "Potenciado" : "Clásico";
+    return "";
 }
 
 function getDifficultyLabel() {
@@ -325,7 +325,7 @@ function renderSetupPhase() {
     if (playerCard) playerCard.classList.remove("board-card--target");
     if (enemyCard) enemyCard.classList.remove("board-card--target");
 
-    gameModeLabel.textContent = `${getModeLabel()} · ${getVariantLabel()}${state.mode === "bot" ? ` · ${getDifficultyLabel()}` : ""}`;
+    gameModeLabel.textContent = `${getModeLabel()}${state.mode === "bot" ? ` · ${getDifficultyLabel()}` : ""}`;
     turnLabel.textContent = "FLEET DEPLOYMENT";
     // make sure the textual turn label is visible during setup
     if (turnLabel) turnLabel.style.display = "";
@@ -501,7 +501,7 @@ function renderBattlePhase() {
         setPower(state.selectedPower);
     }
 
-    gameModeLabel.textContent = `${getModeLabel()} · ${getVariantLabel()}${state.mode === "bot" ? ` · ${getDifficultyLabel()}` : ""}`;
+    gameModeLabel.textContent = `${getModeLabel()}${state.mode === "bot" ? ` · ${getDifficultyLabel()}` : ""}`;
     // hide the per-turn textual indicator in battle; we will highlight the target board instead
     if (turnLabel) turnLabel.style.display = "none";
     statusText.textContent = state.mode === "bot"
@@ -515,21 +515,31 @@ function renderBattlePhase() {
 
     renderBoard(board, player.board, {
         revealShips: state.mode === "bot",
-        onCellClick: state.mode === "multiplayer" && defender === player ? (event) => handleAttackCellClick(event, player) : null,
+        onCellClick: state.mode === "multiplayer" && attacker === opponent ? (event) => handleAttackCellClick(event, player) : null,
     });
 
     renderBoard(boardAttack, opponent.board, {
         revealShips: false,
-        onCellClick: attacker.isBot ? null : (event) => handleAttackCellClick(event, opponent),
+        onCellClick: attacker.isBot || (state.mode === "multiplayer" && attacker === opponent)
+            ? null
+            : (event) => handleAttackCellClick(event, opponent),
     });
 
     // highlight which board will be attacked next
     if (playerCard) playerCard.classList.remove("board-card--target");
     if (enemyCard) enemyCard.classList.remove("board-card--target");
-    if (attacker.isBot) {
-        if (playerCard) playerCard.classList.add("board-card--target");
-    } else {
-        if (enemyCard) enemyCard.classList.add("board-card--target");
+    if (state.mode === "bot") {
+        if (attacker.isBot) {
+            if (playerCard) playerCard.classList.add("board-card--target");
+        } else {
+            if (enemyCard) enemyCard.classList.add("board-card--target");
+        }
+    } else if (state.mode === "multiplayer") {
+        if (attacker === player) {
+            if (enemyCard) enemyCard.classList.add("board-card--target");
+        } else {
+            if (playerCard) playerCard.classList.add("board-card--target");
+        }
     }
 }
 

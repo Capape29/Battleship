@@ -837,9 +837,9 @@ button:disabled {
 
 /* Visual indicator for the board that will be attacked next */
 .board-card--target {
-    border: 1px solid rgba(248, 190, 0, 0.45);
-    box-shadow: 0 8px 30px rgba(248, 190, 0, 0.06), 0 0 0 4px rgba(248, 190, 0, 0.06) inset;
-    transition: box-shadow 220ms ease, transform 160ms ease;
+    border: 1px solid rgba(248, 190, 0, 0.8);
+    box-shadow: 0 0 0 2px rgba(248, 190, 0, 0.16), 0 0 0 6px rgba(248, 190, 0, 0.06);
+    transition: box-shadow 220ms ease, border-color 220ms ease;
 }
 .board-card--target .board-card__header h3 {
     color: var(--tertiary);
