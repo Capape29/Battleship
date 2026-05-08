@@ -692,25 +692,26 @@ button:disabled {
     width: min(1180px, 100%);
     margin: 20px auto 0;
     padding: 18px;
-    display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(220px, 0.9fr) auto;
-    gap: 18px;
-    align-items: end;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
 }
 
 .ships {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
+    grid-template-columns: 1fr;
+    gap: 12px;
 }
 
 .ship-option {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 1px;
     width: 100%;
-    padding: 12px 14px;
+    min-height: 20px;
+    padding: 3px 6px;
     text-align: left;
     color: var(--on-surface);
     background: rgba(255, 255, 255, 0.06);
@@ -724,6 +725,7 @@ button:disabled {
 .ship-option small {
     color: var(--on-surface-variant);
     font-family: "JetBrains Mono", monospace;
+    line-height: 1.2;
 }
 
 .ship-option strong {
@@ -732,9 +734,153 @@ button:disabled {
     font-family: "JetBrains Mono", monospace;
 }
 
+.ships-panel,
+.orientation-panel,
+.setup-actions {
+    width: 100%;
+}
+
+.ships-panel {
+    display: grid;
+    gap: 12px;
+}
+
+.orientation-panel {
+    display: grid;
+    gap: 12px;
+}
+
+.orientation-panel .button-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
 .setup-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: stretch;
+}
+
+.setup-actions .primary-button {
+    width: 100%;
+}
+
+#gameScreen.game-screen--setup,
+#gameScreen.game-screen--battle {
+    display: grid;
+    width: min(1180px, 100%);
+    margin: 0 auto;
+    align-items: start;
+    justify-items: stretch;
+    gap: 20px;
+}
+
+#gameScreen.game-screen--setup {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+}
+
+#gameScreen.game-screen--battle {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+#gameScreen.game-screen--setup > .game-header,
+#gameScreen.game-screen--battle > .game-header {
+    grid-column: 1 / -1;
+}
+
+#gameScreen.game-screen--setup > .board-layout {
+    grid-column: 1 / 2;
+    width: 100%;
+    margin: 0;
+}
+
+#gameScreen.game-screen--setup > .setup-panel {
+    grid-column: 2 / 3;
+    width: 100%;
+    margin: 0;
+    align-self: start;
+}
+
+#gameScreen.game-screen--battle > .board-layout {
+    width: 100%;
+}
+
+.battle-header {
+    width: 100%;
+    margin: 0;
+    padding: 18px 22px;
+    align-items: center;
+    gap: 18px;
+}
+
+.battle-header__title {
+    flex: 1 1 auto;
+    min-width: 260px;
+}
+
+.status-pill {
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.secondary-button--danger {
+    color: #241700;
+    background: var(--tertiary);
+    border-color: rgba(248, 190, 0, 0.55);
+    font-weight: 700;
+}
+
+.board-card {
+    padding: 18px;
+}
+
+.board-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.board-card__subtitle {
+    margin: 4px 0 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    color: var(--on-surface-variant);
+    text-transform: uppercase;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0 10px;
+    color: var(--primary);
+    border: 1px solid rgba(176, 200, 240, 0.24);
+    background: rgba(176, 200, 240, 0.08);
+}
+
+.status-pill--accent {
+    color: var(--tertiary);
+    border-color: rgba(248, 190, 0, 0.28);
+    background: rgba(248, 190, 0, 0.08);
+}
+
+.status-pill--active {
+    color: #06101d;
+    border-color: transparent;
+    background: linear-gradient(180deg, rgba(176, 200, 240, 0.96), rgba(142, 166, 207, 0.96));
+}
+
+.setup-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 .menu-shell__stack .active .menu-action__badge,

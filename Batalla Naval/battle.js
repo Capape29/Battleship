@@ -16,6 +16,7 @@ const turnLabel = document.querySelector("#turnLabel");
 const statusText = document.querySelector("#statusText");
 const playerBoardLabel = document.querySelector("#playerBoardLabel");
 const opponentBoardLabel = document.querySelector("#opponentBoardLabel");
+const setupFleetStatus = document.querySelector("#setupFleetStatus");
 const menuStartButton = document.querySelector("#menuStartButton");
 const setupActionButton = document.querySelector("#setupActionButton");
 const closeSettingsButton = document.querySelector("#closeSettingsButton");
@@ -42,8 +43,12 @@ const state = {
     setupPlayerIndex: 0,
     battlePlayerIndex: 0,
     selectedShipIndex: 0,
-    selectedOrientation: "horizontal"
+    selectedOrientation: "horizontal",
+    lastShot: null
 };
+
+const TOTAL_SHIP_CELLS = SHIP_SIZES.reduce((total, size, index) => total + size * SHIP_COUNTS[index], 0);
+const TOTAL_SHIP_PLACEMENTS = SHIP_COUNTS.reduce((total, count) => total + count, 0);
 
 function createEmptyBoard() {
     return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(""));
@@ -86,6 +91,27 @@ function getVariantLabel() {
 
 function getDifficultyLabel() {
     return state.difficulty === "easy" ? "Fácil" : state.difficulty === "hard" ? "Difícil" : "Normal";
+}
+
+function getPlacedShipCount(player) {
+    return TOTAL_SHIP_PLACEMENTS - player.placementCounts.reduce((total, count) => total + count, 0);
+}
+
+function getFleetIntegrityPercent(player) {
+    return Math.max(0, Math.round((player.remainingCells / TOTAL_SHIP_CELLS) * 100));
+}
+
+function formatCoordinates(row, col) {
+    return `${String.fromCharCode(65 + col)}${row + 1}`;
+}
+
+function renderDeploymentStatus(player) {
+    const placedShips = getPlacedShipCount(player);
+    const deploymentValue = `${placedShips}/${TOTAL_SHIP_PLACEMENTS}`;
+
+    if (setupFleetStatus) {
+        setupFleetStatus.textContent = deploymentValue;
+    }
 }
 
 function updateMenuSelection() {
@@ -279,14 +305,17 @@ function renderSetupPhase() {
     const player = currentSetupPlayer();
     const ready = allShipsPlaced(player);
 
+    gameScreen.classList.add("game-screen--setup");
+    gameScreen.classList.remove("game-screen--battle");
     attackCard.classList.add("hidden");
     setupPanel.classList.remove("hidden");
 
     gameModeLabel.textContent = `${getModeLabel()} · ${getVariantLabel()}${state.mode === "bot" ? ` · ${getDifficultyLabel()}` : ""}`;
-    turnLabel.textContent = "Preparación";
-    statusText.textContent = state.mode === "bot" ? "Coloca tus naves para comenzar." : `Turno de ${player.name}: coloca tus naves.`;
+    turnLabel.textContent = "FLEET DEPLOYMENT";
+    statusText.textContent = state.mode === "bot" ? "Click the grid to place the selected ship." : `Turno de ${player.name}: coloca tus naves.`;
     playerBoardLabel.textContent = player.name;
     opponentBoardLabel.textContent = state.mode === "bot" ? "Tablero del bot" : state.setupPlayerIndex === 0 ? "Tablero del jugador 2" : "Tablero del jugador 1";
+    renderDeploymentStatus(player);
 
     renderBoard(board, player.board, {
         revealShips: true,
@@ -298,11 +327,11 @@ function renderSetupPhase() {
 
     setupActionButton.disabled = !ready;
     if (state.mode === "bot") {
-        setupActionButton.textContent = ready ? "Empezar juego" : "Coloca todas tus naves";
+        setupActionButton.textContent = ready ? "CONFIRM DEPLOYMENT" : "PLACE ALL SHIPS";
     } else if (state.setupPlayerIndex === 0) {
-        setupActionButton.textContent = ready ? "Confirmar jugador 1" : "Coloca todas tus naves";
+        setupActionButton.textContent = ready ? "CONFIRM PLAYER 1" : "PLACE ALL SHIPS";
     } else {
-        setupActionButton.textContent = ready ? "Empezar batalla" : "Coloca todas tus naves";
+        setupActionButton.textContent = ready ? "BEGIN BATTLE" : "PLACE ALL SHIPS";
     }
 }
 
@@ -366,26 +395,30 @@ function autoPlaceBotShips() {
 function renderBattlePhase() {
     const attacker = currentBattlePlayer();
     const defender = opponentPlayer();
+    const player = state.players[0];
+    const opponent = state.players[1];
 
+    gameScreen.classList.add("game-screen--battle");
+    gameScreen.classList.remove("game-screen--setup");
     attackCard.classList.remove("hidden");
     setupPanel.classList.add("hidden");
 
     gameModeLabel.textContent = `${getModeLabel()} · ${getVariantLabel()}${state.mode === "bot" ? ` · ${getDifficultyLabel()}` : ""}`;
-    turnLabel.textContent = `${attacker.name} ataca`;
+    turnLabel.textContent = attacker.isBot ? "ENEMY TURN" : "YOUR TURN";
     statusText.textContent = state.mode === "bot"
         ? attacker.isBot
-            ? "La máquina está disparando."
-            : "Tu turno: dispara al tablero rival."
+            ? "Enemy systems are active."
+            : "Target the enemy grid and engage."
         : `${attacker.name}, dispara al tablero del rival.`;
 
-    playerBoardLabel.textContent = attacker.name;
-    opponentBoardLabel.textContent = defender.name;
+    playerBoardLabel.textContent = player.name;
+    opponentBoardLabel.textContent = opponent.name;
 
-    renderBoard(board, attacker.board, {
+    renderBoard(board, player.board, {
         revealShips: true,
     });
 
-    renderBoard(boardAttack, defender.board, {
+    renderBoard(boardAttack, opponent.board, {
         revealShips: false,
         onCellClick: attacker.isBot ? null : handleAttackCellClick,
     });
@@ -394,6 +427,7 @@ function renderBattlePhase() {
 function startBattle() {
     state.phase = "battle";
     state.battlePlayerIndex = 0;
+    state.lastShot = null;
 
     renderBattlePhase();
 
@@ -559,6 +593,8 @@ function processShot(attacker, defender, row, col) {
         defender.board[row][col] = "miss";
     }
 
+    state.lastShot = { row, col, result };
+
     renderBattlePhase();
 
     if (defender.remainingCells === 0) {
@@ -623,6 +659,7 @@ function startNewGame() {
     state.selectedShipIndex = 0;
     state.selectedOrientation = "horizontal";
     state.phase = "setup";
+    state.lastShot = null;
 
     setScreen("game");
     renderSetupPhase();
@@ -636,7 +673,9 @@ function returnToMenu() {
     state.battlePlayerIndex = 0;
     state.selectedShipIndex = 0;
     state.selectedOrientation = "horizontal";
+    state.lastShot = null;
 
+    gameScreen.classList.remove("game-screen--setup", "game-screen--battle");
     setScreen("menu");
     updateMenuSelection();
 }
@@ -683,6 +722,7 @@ function resetMenuState() {
     state.modeSelected = false;
     updateMenuSelection();
     setOrientation("horizontal");
+    gameScreen.classList.remove("game-screen--setup", "game-screen--battle");
     setScreen("menu");
 }
 

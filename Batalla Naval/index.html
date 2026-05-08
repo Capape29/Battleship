@@ -95,35 +95,50 @@
             </section>
 
             <section id="gameScreen" class="screen hidden">
-                <header class="game-header">
-                    <div>
+                <header class="game-header battle-header">
+                    <div class="battle-header__title">
                         <p id="gameModeLabel" class="eyebrow"></p>
                         <h2 id="turnLabel">Preparación</h2>
                         <p id="statusText">Coloca tus naves para comenzar.</p>
                     </div>
-                    <button id="backToMenuButton" class="secondary-button" type="button">Volver al menú</button>
+                    <button id="backToMenuButton" class="secondary-button secondary-button--danger" type="button">ABANDON MISSION</button>
                 </header>
 
                 <div class="board-layout">
-                    <article class="board-card">
-                        <h3 id="playerBoardLabel">Tu tablero</h3>
+                    <article class="board-card board-card--player">
+                        <div class="board-card__header">
+                            <div>
+                                <h3 id="playerBoardLabel">Tu tablero</h3>
+                                <p class="board-card__subtitle">Fleet deployment grid</p>
+                            </div>
+                            <span class="status-pill status-pill--active">TACTICAL RADAR</span>
+                        </div>
                         <div id="board"></div>
                     </article>
 
-                    <article id="attackCard" class="board-card hidden">
-                        <h3 id="opponentBoardLabel">Tablero rival</h3>
+                    <article id="attackCard" class="board-card board-card--enemy hidden">
+                        <div class="board-card__header">
+                            <div>
+                                <h3 id="opponentBoardLabel">Tablero rival</h3>
+                                <p class="board-card__subtitle">Enemy engagement grid</p>
+                            </div>
+                            <span class="status-pill status-pill--accent">TARGET LOCK</span>
+                        </div>
                         <div id="boardAttack"></div>
                     </article>
                 </div>
 
                 <section id="setupPanel" class="setup-panel">
                     <div class="ships-panel">
-                        <h3>Naves</h3>
+                        <div class="setup-panel__header">
+                            <h3>Fleet deployment</h3>
+                            <span id="setupFleetStatus" class="status-pill">1 / 5</span>
+                        </div>
                         <div id="ships" class="ships"></div>
                     </div>
 
                     <div class="orientation-panel">
-                        <h3>Orientación</h3>
+                        <h3>Rotate ship</h3>
                         <div id="orientationControls" class="button-grid">
                             <button class="choice-button active" type="button" data-orientation="horizontal">Horizontal</button>
                             <button class="choice-button" type="button" data-orientation="vertical">Vertical</button>
@@ -131,7 +146,7 @@
                     </div>
 
                     <div class="setup-actions">
-                        <button id="setupActionButton" class="primary-button" type="button">Empezar juego</button>
+                        <button id="setupActionButton" class="primary-button" type="button">CONFIRM DEPLOYMENT</button>
                     </div>
                 </section>
             </section>
