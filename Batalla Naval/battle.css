@@ -988,3 +988,23 @@ button:disabled {
         min-height: 96px;
     }
 }
+
+.power-button {
+    min-width: 170px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-align: center;
+}
+
+.power-button__icon {
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+.power-button__name {
+    font-size: 0.82rem;
+    font-weight: 600;
+}

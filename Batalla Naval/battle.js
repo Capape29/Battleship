@@ -69,6 +69,10 @@ function createPlayer(name, isBot = false) {
             lastHit: null,
             direction: null,
         },
+        powerCharges: {
+            adjacent: 2,
+            line: 1,
+        },
     };
 }
 
@@ -396,9 +400,19 @@ function autoPlaceBotShips() {
 }
 
 function setPower(power) {
-    state.selectedPower = power;
+    const player = currentBattlePlayer();
+    if (!player || !player.powerCharges || (player.powerCharges[power] ?? 0) <= 0) {
+        state.selectedPower = "single";
+    } else {
+        state.selectedPower = power;
+    }
+
     powerButtons.forEach((button) => {
-        button.classList.toggle("active", button.dataset.power === power);
+        const powerType = button.dataset.power;
+        const remaining = player?.powerCharges?.[powerType] ?? 0;
+        button.classList.toggle("active", state.selectedPower === powerType);
+        button.disabled = remaining <= 0;
+        button.title = `Usos restantes: ${remaining}`;
     });
 }
 
@@ -425,16 +439,23 @@ function getAvailableCells(cells, defender) {
     return cells.filter(({ row, col }) => row >= 0 && col >= 0 && row < BOARD_SIZE && col < BOARD_SIZE && isShotAvailable(defender.board, row, col));
 }
 
-function chooseBotPower() {
+function chooseBotPower(attacker) {
     if (state.variant !== "powered") return "single";
+
+    const available = [];
+    if (attacker.powerCharges.line > 0) available.push("line");
+    if (attacker.powerCharges.adjacent > 0) available.push("adjacent");
+    if (available.length === 0) return "single";
+
     const rand = Math.random();
     if (state.difficulty === "hard") {
-        if (rand < 0.35) return "line";
-        if (rand < 0.75) return "adjacent";
+        if (rand < 0.3 && available.includes("line")) return "line";
+        if (rand < 0.75 && available.includes("adjacent")) return "adjacent";
         return "single";
     }
-    if (rand < 0.2) return "line";
-    if (rand < 0.5) return "adjacent";
+
+    if (rand < 0.2 && available.includes("line")) return "line";
+    if (rand < 0.5 && available.includes("adjacent")) return "adjacent";
     return "single";
 }
 
@@ -466,6 +487,9 @@ function renderBattlePhase() {
     attackCard.classList.remove("hidden");
     setupPanel.classList.add("hidden");
     powerPanel.classList.toggle("hidden", state.variant !== "powered" || attacker.isBot);
+    if (!attacker.isBot && state.variant === "powered") {
+        setPower(state.selectedPower);
+    }
 
     gameModeLabel.textContent = `${getModeLabel()} · ${getVariantLabel()}${state.mode === "bot" ? ` · ${getDifficultyLabel()}` : ""}`;
     turnLabel.textContent = attacker.isBot ? "ENEMY TURN" : "YOUR TURN";
@@ -640,12 +664,17 @@ function finishGame(winner) {
 }
 
 function processShot(attacker, defender, row, col, power = "single") {
-    const targets = getAvailableCells(getShotPattern(power, row, col), defender);
+    const shotPower = power !== "single" && (attacker.powerCharges[power] ?? 0) > 0 ? power : "single";
+    const targets = getAvailableCells(getShotPattern(shotPower, row, col), defender);
     if (targets.length === 0) {
         return;
     }
 
     let hitRegistered = false;
+
+    if (shotPower !== "single") {
+        attacker.powerCharges[shotPower] -= 1;
+    }
 
     targets.forEach(({ row: targetRow, col: targetCol }) => {
         const currentValue = defender.board[targetRow][targetCol];
@@ -663,6 +692,7 @@ function processShot(attacker, defender, row, col, power = "single") {
     });
 
     state.lastShot = { row, col, result: hitRegistered ? "hit" : "miss" };
+    state.selectedPower = "single";
 
     renderBattlePhase();
 
@@ -716,7 +746,7 @@ function executeBotTurn() {
         return;
     }
 
-    processShot(attacker, defender, shot.row, shot.col, chooseBotPower());
+    processShot(attacker, defender, shot.row, shot.col, chooseBotPower(attacker));
 }
 
 function startNewGame() {
@@ -797,7 +827,7 @@ function resetMenuState() {
     state.modeSelected = false;
     updateMenuSelection();
     setOrientation("horizontal");
-    setPower("single");
+    state.selectedPower = "single";
     gameScreen.classList.remove("game-screen--setup", "game-screen--battle");
     setScreen("menu");
 }
