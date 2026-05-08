@@ -835,6 +835,16 @@ button:disabled {
     padding: 18px;
 }
 
+/* Visual indicator for the board that will be attacked next */
+.board-card--target {
+    border: 1px solid rgba(248, 190, 0, 0.45);
+    box-shadow: 0 8px 30px rgba(248, 190, 0, 0.06), 0 0 0 4px rgba(248, 190, 0, 0.06) inset;
+    transition: box-shadow 220ms ease, transform 160ms ease;
+}
+.board-card--target .board-card__header h3 {
+    color: var(--tertiary);
+}
+
 .board-card__header {
     display: flex;
     align-items: flex-start;
