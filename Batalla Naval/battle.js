@@ -11,6 +11,8 @@ const shipsContainer = document.querySelector("#ships");
 const orientationControls = document.querySelector("#orientationControls");
 const difficultyGroup = document.querySelector("#difficultyGroup");
 const setupPanel = document.querySelector("#setupPanel");
+const powerPanel = document.querySelector("#powerPanel");
+const powerButtons = Array.from(document.querySelectorAll("[data-power]"));
 const gameModeLabel = document.querySelector("#gameModeLabel");
 const turnLabel = document.querySelector("#turnLabel");
 const statusText = document.querySelector("#statusText");
@@ -44,7 +46,8 @@ const state = {
     battlePlayerIndex: 0,
     selectedShipIndex: 0,
     selectedOrientation: "horizontal",
-    lastShot: null
+    lastShot: null,
+    selectedPower: "single"
 };
 
 const TOTAL_SHIP_CELLS = SHIP_SIZES.reduce((total, size, index) => total + size * SHIP_COUNTS[index], 0);
@@ -392,6 +395,66 @@ function autoPlaceBotShips() {
     });
 }
 
+function setPower(power) {
+    state.selectedPower = power;
+    powerButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.power === power);
+    });
+}
+
+function getShotPattern(power, row, col) {
+    if (power === "adjacent") {
+        return [
+            { row, col },
+            { row: row - 1, col },
+            { row: row + 1, col },
+            { row, col: col - 1 },
+            { row, col: col + 1 },
+        ];
+    }
+
+    if (power === "line") {
+        const fullRow = Array.from({ length: BOARD_SIZE }, (_, index) => ({ row, col: index }));
+        return fullRow;
+    }
+
+    return [{ row, col }];
+}
+
+function getAvailableCells(cells, defender) {
+    return cells.filter(({ row, col }) => row >= 0 && col >= 0 && row < BOARD_SIZE && col < BOARD_SIZE && isShotAvailable(defender.board, row, col));
+}
+
+function chooseBotPower() {
+    if (state.variant !== "powered") return "single";
+    const rand = Math.random();
+    if (state.difficulty === "hard") {
+        if (rand < 0.35) return "line";
+        if (rand < 0.75) return "adjacent";
+        return "single";
+    }
+    if (rand < 0.2) return "line";
+    if (rand < 0.5) return "adjacent";
+    return "single";
+}
+
+function chooseCheckerboardShot(matrix) {
+    const parityShots = [];
+    const fallback = [];
+
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+        for (let col = 0; col < BOARD_SIZE; col += 1) {
+            if (!isShotAvailable(matrix, row, col)) continue;
+            fallback.push({ row, col });
+            if ((row + col) % 2 === 0) parityShots.push({ row, col });
+        }
+    }
+
+    const pool = parityShots.length > 0 ? parityShots : fallback;
+    if (pool.length === 0) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
 function renderBattlePhase() {
     const attacker = currentBattlePlayer();
     const defender = opponentPlayer();
@@ -402,6 +465,7 @@ function renderBattlePhase() {
     gameScreen.classList.remove("game-screen--setup");
     attackCard.classList.remove("hidden");
     setupPanel.classList.add("hidden");
+    powerPanel.classList.toggle("hidden", state.variant !== "powered" || attacker.isBot);
 
     gameModeLabel.textContent = `${getModeLabel()} · ${getVariantLabel()}${state.mode === "bot" ? ` · ${getDifficultyLabel()}` : ""}`;
     turnLabel.textContent = attacker.isBot ? "ENEMY TURN" : "YOUR TURN";
@@ -415,7 +479,7 @@ function renderBattlePhase() {
     opponentBoardLabel.textContent = opponent.name;
 
     renderBoard(board, player.board, {
-        revealShips: true,
+        revealShips: state.mode === "bot",
     });
 
     renderBoard(boardAttack, opponent.board, {
@@ -428,6 +492,7 @@ function startBattle() {
     state.phase = "battle";
     state.battlePlayerIndex = 0;
     state.lastShot = null;
+    state.selectedPower = "single";
 
     renderBattlePhase();
 
@@ -564,7 +629,7 @@ function chooseBotShot(defenderBoard, attacker) {
         }
     }
 
-    return chooseRandomShot(defenderBoard);
+    return state.difficulty === "easy" ? chooseRandomShot(defenderBoard) : chooseCheckerboardShot(defenderBoard);
 }
 
 function finishGame(winner) {
@@ -574,26 +639,30 @@ function finishGame(winner) {
     setupActionButton.disabled = true;
 }
 
-function processShot(attacker, defender, row, col) {
-    const currentValue = defender.board[row][col];
-    if (currentValue === "hit" || currentValue === "miss") {
+function processShot(attacker, defender, row, col, power = "single") {
+    const targets = getAvailableCells(getShotPattern(power, row, col), defender);
+    if (targets.length === 0) {
         return;
     }
 
-    let result = "miss";
-    if (currentValue === "ship") {
-        defender.board[row][col] = "hit";
-        defender.remainingCells -= 1;
-        result = "hit";
+    let hitRegistered = false;
 
-        if (attacker.isBot) {
-            registerBotHit(attacker, row, col);
+    targets.forEach(({ row: targetRow, col: targetCol }) => {
+        const currentValue = defender.board[targetRow][targetCol];
+        if (currentValue === "ship") {
+            defender.board[targetRow][targetCol] = "hit";
+            defender.remainingCells -= 1;
+            hitRegistered = true;
+
+            if (attacker.isBot) {
+                registerBotHit(attacker, targetRow, targetCol);
+            }
+        } else if (currentValue !== "hit" && currentValue !== "miss") {
+            defender.board[targetRow][targetCol] = "miss";
         }
-    } else {
-        defender.board[row][col] = "miss";
-    }
+    });
 
-    state.lastShot = { row, col, result };
+    state.lastShot = { row, col, result: hitRegistered ? "hit" : "miss" };
 
     renderBattlePhase();
 
@@ -602,7 +671,7 @@ function processShot(attacker, defender, row, col) {
         return;
     }
 
-    if (state.variant === "powered" && result === "hit") {
+    if (state.variant === "powered" && hitRegistered) {
         if (attacker.isBot) {
             window.setTimeout(executeBotTurn, 350);
         }
@@ -631,7 +700,7 @@ function handleAttackCellClick(event) {
     const col = Number(event.currentTarget.dataset.col);
     const defender = opponentPlayer();
 
-    processShot(attacker, defender, row, col);
+    processShot(attacker, defender, row, col, state.selectedPower);
 }
 
 function executeBotTurn() {
@@ -647,7 +716,7 @@ function executeBotTurn() {
         return;
     }
 
-    processShot(attacker, defender, shot.row, shot.col);
+    processShot(attacker, defender, shot.row, shot.col, chooseBotPower());
 }
 
 function startNewGame() {
@@ -660,6 +729,7 @@ function startNewGame() {
     state.selectedOrientation = "horizontal";
     state.phase = "setup";
     state.lastShot = null;
+    state.selectedPower = "single";
 
     setScreen("game");
     renderSetupPhase();
@@ -674,6 +744,7 @@ function returnToMenu() {
     state.selectedShipIndex = 0;
     state.selectedOrientation = "horizontal";
     state.lastShot = null;
+    state.selectedPower = "single";
 
     gameScreen.classList.remove("game-screen--setup", "game-screen--battle");
     setScreen("menu");
@@ -705,6 +776,10 @@ function bindEvents() {
         });
     });
 
+    powerButtons.forEach((button) => {
+        button.addEventListener("click", () => setPower(button.dataset.power));
+    });
+
     closeSettingsButton.addEventListener("click", hideSettings);
     if (sidenavSettingsButton) {
         sidenavSettingsButton.addEventListener("click", showSettings);
@@ -722,6 +797,7 @@ function resetMenuState() {
     state.modeSelected = false;
     updateMenuSelection();
     setOrientation("horizontal");
+    setPower("single");
     gameScreen.classList.remove("game-screen--setup", "game-screen--battle");
     setScreen("menu");
 }
