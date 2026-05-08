@@ -515,11 +515,12 @@ function renderBattlePhase() {
 
     renderBoard(board, player.board, {
         revealShips: state.mode === "bot",
+        onCellClick: state.mode === "multiplayer" && defender === player ? (event) => handleAttackCellClick(event, player) : null,
     });
 
     renderBoard(boardAttack, opponent.board, {
         revealShips: false,
-        onCellClick: attacker.isBot ? null : handleAttackCellClick,
+        onCellClick: attacker.isBot ? null : (event) => handleAttackCellClick(event, opponent),
     });
 
     // highlight which board will be attacked next
@@ -757,7 +758,7 @@ function processShot(attacker, defender, row, col, power = "single") {
     }
 }
 
-function handleAttackCellClick(event) {
+function handleAttackCellClick(event, defender = opponentPlayer()) {
     if (state.phase !== "battle") {
         return;
     }
@@ -769,7 +770,6 @@ function handleAttackCellClick(event) {
 
     const row = Number(event.currentTarget.dataset.row);
     const col = Number(event.currentTarget.dataset.col);
-    const defender = opponentPlayer();
 
     processShot(attacker, defender, row, col, state.selectedPower);
 }
